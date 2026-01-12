@@ -1,0 +1,19 @@
+# Environnements
+llm_code_education_env/
+venv/
+__pycache__/
+*.pyc
+
+# Données (PDF, audio, transcriptions…)
+data/
+db/
+
+# Fichiers Windows (WSL)
+*:Zone.Identifier
+
+# Secrets
+.env
+
+# Dépendances tierces
+whisper.cpp/
+third_party/
