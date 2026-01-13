@@ -17,3 +17,13 @@ db/
 # Dépendances tierces
 whisper.cpp/
 third_party/
+
+# Modèles LLM (très lourds, ne jamais versionner)
+models/
+*.gguf
+*.bin
+
+
+# Logs éventuels
+*.log
+logs/

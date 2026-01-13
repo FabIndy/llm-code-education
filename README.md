@@ -1,163 +1,110 @@
-# LLM + RAG – Code de l’éducation (Projet expérimental)
+# LLM + RAG – Code de l’éducation
 
 ---
 
-## 🇫🇷 Partie 1 — Description en français
+## 🇫🇷 Partie 1 — Description du projet (Français)
 
-### Objectif du projet
-Ce projet explore la conception d’un **assistant IA local** combinant :
-- un **LLM local** (via Ollama),
-- un **pipeline RAG (Retrieval-Augmented Generation)**,
-- appliqué au **Code de l’éducation français**.
+### Objectif
+Ce projet vise à concevoir un **assistant IA local basé sur un pipeline RAG (Retrieval-Augmented Generation)** appliqué au **Code de l’éducation français**.  
+L’objectif est de fournir des réponses **fiables, traçables et vérifiables**, fondées exclusivement sur les articles du Code de l’éducation, **sans hallucination du modèle**.
 
-L’objectif principal est de **comprendre, tester et structurer** une approche robuste permettant :
-- d’interroger un corpus juridique complexe,
-- de limiter les hallucinations des modèles de langage,
-- de produire des réponses traçables et vérifiables,
-- tout en restant dans un environnement **local et maîtrisé**.
-
-Ce projet s’inscrit dans une démarche **expérimentale et pédagogique**.
+Une **mise à disposition gratuite** sous forme d’application est envisagée à terme, notamment à destination des **chefs d’établissement d’EPLE**, via une plateforme comme **Hugging Face**.
 
 ---
 
-###  État actuel du projet
+## Architecture du projet
 
-#### Environnement technique
-- Système : Ubuntu (WSL)
-- GPU : NVIDIA RTX 4060 (8 Go)
-- Environnement Python isolé : `llm_code_education_env`
-- Gestion du LLM local via **Ollama**
-
-####  Données
-- Source actuelle : **Code de l’éducation au format PDF**
-- Extraction du texte page par page
-- Nettoyage léger du texte
-- Découpage en chunks
-- Vectorisation avec `sentence-transformers`
-- Stockage dans un **index FAISS local**
-
-#### Pipeline RAG (texte)
-- Question utilisateur en entrée
-- Recherche sémantique dans l’index FAISS
-- Injection du contexte pertinent dans le LLM local
-- Génération de réponses textuelles basées sur le contexte récupéré
-
-#### Voix (expérimentation en cours)
-- Intégration technique d’un moteur de **speech-to-text local**
-- Validation du flux audio → texte
-- Réflexion en cours sur une intégration plus ergonomique via navigateur
-
----
-
-### Enseignements clés à ce stade
-- Les performances d’un RAG dépendent fortement de la **qualité et de la structure de la source**.
-- Un corpus juridique en PDF impose des contraintes importantes :
-  - structure implicite,
-  - références juridiques indirectes,
-  - pagination non normative.
-- Les LLM nécessitent des **garde-fous explicites** pour éviter des réponses plausibles mais incorrectes.
-- La séparation claire entre :
-  - récupération de l’information,
-  - génération de la réponse,
-  est essentielle pour améliorer la fiabilité.
+```
+llm_code_education/
+│
+├── data/
+│   ├── code_education.pdf
+│   ├── chunks_articles.jsonl
+│   ├── chunks_preview.md
+│   └── chunks_audit.md
+│
+├── db/
+│   └── faiss_code_edu_by_article/
+│
+├── models/
+│   └── mistral.gguf
+│
+├── src/
+│   ├── chunk_by_article.py
+│   ├── build_faiss_index.py
+│   ├── rag_chat_ollama.py
+│   └── rag_chat_llama.py
+│
+├── llm_code_education_env/
+├── requirements.txt
+└── README.md
+```
 
 ---
 
-### Prochaines étapes
-- Mise en place d’un **backend FastAPI** unifié
-- Capture audio côté navigateur (Web Audio API)
-- Pipeline STT intégré au backend
-- Renforcement du RAG avec :
-  - validation explicite des sources,
-  - citations construites côté code,
-- Étude d’une source juridique plus structurée (XML / Légifrance)
+## Description des dossiers
+
+### `data/`
+Contient l’ensemble des **données sources et intermédiaires** :
+- `code_education.pdf` : source officielle du Code de l’éducation.
+- `chunks_articles.jsonl` : base principale des articles (1 chunk = 1 article).
+- `chunks_preview.md` : aperçu lisible des articles découpés.
+- `chunks_audit.md` : rapport de contrôle qualité.
+
+### `db/`
+Contient l’index vectoriel :
+- `faiss_code_edu_by_article/` : index FAISS construit à partir des articles du Code de l’éducation.
+
+### `models/`
+- `mistral.gguf` : modèle **Mistral Instruct** quantifié au format **GGUF**, utilisé via `llama.cpp` pour assurer la compatibilité avec un déploiement Hugging Face.
+
+### `src/`
+Contient le **code applicatif principal** :
+- `chunk_by_article.py`  
+  → Extraction du PDF et découpage **article par article**, avec nettoyage des en-têtes/pieds de page.
+- `build_faiss_index.py`  
+  → Création des embeddings et construction de l’index FAISS.
+- `rag_chat_ollama.py`  
+  → Version initiale du chatbot RAG utilisant **Ollama + Mistral** pour les tests locaux.
+- `rag_chat_llama.py`  
+  → Version adaptée pour le déploiement :
+    - remplacement d’Ollama par **`llama.cpp`**,
+    - utilisation d’un modèle **Mistral GGUF**,
+    - paramètres optimisés (contexte, batch, nombre d’articles),
+    - compatibilité **Hugging Face Spaces**.
 
 ---
 
-### Avertissement
-Ce projet est **expérimental**.  
-Les réponses produites :
-- ne constituent pas un avis juridique,
-- peuvent être incomplètes ou inexactes,
-- doivent toujours être vérifiées à partir des sources officielles.
+## Préparation au déploiement sur Hugging Face
+
+Les étapes suivantes ont été réalisées :
+- création d’une version dédiée `rag_chat_llama.py`,
+- abandon d’Ollama au profit de **`llama.cpp`**, compatible Hugging Face,
+- téléchargement et intégration d’un **modèle Mistral GGUF**,
+- réduction et optimisation du contexte pour de meilleures performances CPU,
+- préparation à une interface web légère (Gradio / FastAPI).
 
 ---
 
-## 🇬🇧 Part 2 — English description
+## 🇬🇧 Part 2 — Project description (English)
 
-### Project goal
-This project explores the design of a **local AI assistant** combining:
-- a **local LLM** (via Ollama),
-- a **RAG (Retrieval-Augmented Generation) pipeline**,
-- applied to the **French Code of Education**.
+### Goal
+This project aims to build a **local RAG-based AI assistant** applied to the **French Code of Education**.
 
-The main objective is to **understand, test, and structure** a robust approach to:
-- query a complex legal corpus,
-- reduce LLM hallucinations,
-- produce traceable and verifiable answers,
-- while keeping everything **local and controlled**.
+The objective is to provide **reliable, source-grounded answers**, strictly based on legal articles, with **verbatim citations** and strong hallucination prevention.
 
-This is an **experimental and educational** project.
+A **free public deployment** is planned, especially for **school principals**, via **Hugging Face Spaces**.
 
 ---
 
-### Current project status
-
-#### Technical environment
-- System: Ubuntu (WSL)
-- GPU: NVIDIA RTX 4060 (8 GB)
-- Isolated Python environment: `llm_code_education_env`
-- Local LLM management via **Ollama**
-
-#### Data
-- Current source: **French Code of Education (PDF format)**
-- Page-by-page text extraction
-- Light text cleaning
-- Chunking
-- Embeddings with `sentence-transformers`
-- Local **FAISS vector index**
-
-#### RAG pipeline (text-based)
-- User question as input
-- Semantic search in FAISS
-- Injection of relevant context into the local LLM
-- Text-based answer generation grounded in retrieved context
-
-#### Voice (ongoing experimentation)
-- Technical validation of a **local speech-to-text** engine
-- Audio → text pipeline validated
-- Ongoing reflection on browser-based integration for better UX
+## Hugging Face deployment preparation
+- Creation of a dedicated `rag_chat_llama.py` version
+- Replacement of Ollama with `llama.cpp`
+- Download and integration of a quantized Mistral GGUF model
+- Context size and retrieval strategy optimized for CPU usage
 
 ---
 
-### Key insights so far
-- RAG performance strongly depends on **data structure and quality**.
-- PDF-based legal corpora introduce significant constraints:
-  - implicit structure,
-  - indirect legal references,
-  - non-normative pagination.
-- LLMs require **explicit safeguards** to avoid plausible but incorrect answers.
-- A clear separation between:
-  - information retrieval,
-  - answer generation,
-  is critical to improve reliability.
-
----
-
-### Next steps
-- Unified **FastAPI backend**
-- Browser-side audio capture (Web Audio API)
-- Backend-integrated STT pipeline
-- Stronger RAG with:
-  - explicit source validation,
-  - code-enforced citations,
-- Evaluation of more structured legal sources (XML / Légifrance)
-
----
-
-### Disclaimer
-This project is **experimental**.  
-The generated answers:
-- do not constitute legal advice,
-- may be incomplete or inaccurate,
-- must always be verified against official sources.
+## Disclaimer
+This is an **experimental project**.  
+Generated answers are **not legal advice** and must always be verified against official legal sources.
